@@ -1,12 +1,12 @@
 """
-CrowdStrike Instance Management Lambda Function
+CrowdStrike Hide Host Lambda Function
 
 ______                         __ _______ __         __ __
 |      |.----.-----.--.--.--.--|  |     __|  |_.----.|__|  |--.-----.
 |   ---||   _|  _  |  |  |  |  _  |__     |   _|   _||  |    <|  -__|
 |______||__| |_____|________|_____|_______|____|__|  |__|__|__|_____|
 
-Falcon Instance Management Lambda Function v1.0
+Falcon Hide Host Lambda Function v1.0
 
 Creation date: 05.01.23 - ryanjpayne@CrowdStrike
 """

@@ -1,5 +1,5 @@
 ![image](/Images/cs-logo.png)
-# aws-instance-management
+# aws-hide-host
 
 ## Introduction
 
@@ -41,7 +41,7 @@ Create Falcon API Keys with the following scope: Hosts Read & Write
 **Activate Regions**
 | Parameter|Description|
 |---|---|
-|Activate regions to deploy EventBridge rules| list of regions to enroll with CrowdStrike Instance Management|
+|Activate regions to deploy EventBridge rules| list of regions to enroll with CrowdStrike Hide Host|
 
 **Define Resource Names** 
 These parameters have predefined values, but may be modified if your Organization requires.

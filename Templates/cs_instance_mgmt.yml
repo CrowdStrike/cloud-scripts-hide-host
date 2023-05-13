@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'CrowdStrike Instance Management Automation Template'
+Description: 'CrowdStrike Hide Host Automation Template'
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -62,35 +62,35 @@ Metadata:
 
 Parameters:
   ActivateRegions:
-    Description: Comma Delimited List of AWS Regions to enable CrowdStrike Instance Management
+    Description: Comma Delimited List of AWS Regions to enable CrowdStrike Hide Host
     Type: CommaDelimitedList
     Default: 'us-west-2,us-east-1,us-east-2'
   EventBusName:
     Description: Name of EventBus in primary region to ingest EventBridge events across regions
     Type: String
-    Default: 'cs-instance-management-bus'
+    Default: 'cs-hide-host-bus'
   EventBridgeRuleName:
     Description: Name of EventBridge Rules in each region
     Type: String
-    Default: 'cs-instance-management-rule'
+    Default: 'cs-hide-host-rule'
   EventBridgeRoleName:
     Description: Name of EventBridge Role to enable cross-region events
     Type: String
-    Default: 'cs-instance-management-role'
+    Default: 'cs-hide-host-role'
   LambdaFunctionName:
-    Description: Name of CrowdStrike Instance Management Lambda Function
+    Description: Name of CrowdStrike Hide Host Lambda Function
     Type: String
-    Default: 'cs-instance-management-function'
+    Default: 'cs-hide-host-function'
   StackSetName:
     Description: Name of the StackSet that creates EventBridge Rules
     Type: String
-    Default: 'cs-instance-management-stackset'
+    Default: 'cs-hide-host-stackset'
   StackSetAdminRole:
-    Description: Administration Role for CrowdStrike Instance Management Automation EB StackSet
+    Description: Administration Role for CrowdStrike Hide Host Automation EB StackSet
     Type: String
     Default: 'CrowdStrikeStackSetAdministrationRole'
   StackSetExecRole:
-    Description: Execution Role for CrowdStrike Instance Management Automation EB StackSet
+    Description: Execution Role for CrowdStrike Hide Host Automation EB StackSet
     Type: String
     Default: 'CrowdStrikeStackSetExecutionRole'
   CreateAPISecret:
@@ -104,7 +104,7 @@ Parameters:
   SecretName:
     Description: If Create Secret for API Keys = true, the name of your new AWS Secret to store Falcon API keys.
     Type: String
-    Default: 'cs-instance-management-secret'
+    Default: 'cs-hide-host-secret'
   FalconClientID:
     Description: If Create Secret for API Keys = true, your Falcon OAuth2 Client ID.
     NoEcho: 'true'
@@ -263,7 +263,7 @@ Resources:
           RuleName:
             Description: Event Bridge Rule Name
             Type: String
-            Default: 'cs-instance-management-rule'
+            Default: ''
           Target:
             Description: Target Event Bus Arn
             Type: String
@@ -367,14 +367,14 @@ Resources:
       Code:
         ZipFile: |
           """
-          CrowdStrike Instance Management Lambda Function
+          CrowdStrike Hide Host Lambda Function
 
           ______                         __ _______ __         __ __
           |      |.----.-----.--.--.--.--|  |     __|  |_.----.|__|  |--.-----.
           |   ---||   _|  _  |  |  |  |  _  |__     |   _|   _||  |    <|  -__|
           |______||__| |_____|________|_____|_______|____|__|  |__|__|__|_____|
 
-          Falcon Instance Management Lambda Function v1.0
+          Falcon Hide Host Lambda Function v1.0
 
           Creation date: 05.01.23 - ryanjpayne@CrowdStrike
           """
