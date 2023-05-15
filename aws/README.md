@@ -1,5 +1,5 @@
 ![image](/images/cs-logo.png)
-# aws-hide-host
+# CrowdStrike Cloud Scripts - Hide Host for AWS
 
 ## Introduction
 
@@ -31,7 +31,7 @@ Create Falcon API Keys with the following scope: Hosts Read & Write
 **CrowdStrike Falcon API Keys**
 | Parameter|Description|
 |---|---|
-|Your CrowdStrike Falcon CLoud| u-1, us-2 or eu-1|
+|Your CrowdStrike Falcon Cloud| u-1, us-2 or eu-1|
 |Create Secret for API Keys| whether to provide Falcon API Keys and store as a secret|
 |Your Falcon API Client ID| only provide if Create Secret for API Keys = true|
 |Your Falcon API Secret| only provide if Create Secret for API Keys = true|
