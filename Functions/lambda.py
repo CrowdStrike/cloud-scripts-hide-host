@@ -24,7 +24,7 @@ from botocore.exceptions import ClientError
 subprocess.call('pip install crowdstrike-falconpy -t /tmp/ --no-cache-dir'.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 sys.path.insert(1, '/tmp/')
 try:
-    from falconpy import OAuth2, SensorDownload, Hosts
+    from falconpy import Hosts
 except ImportError as no_falconpy:
     raise SystemExit("Unable to import CrowdStrike SDK. Check automation layer contents.") from no_falconpy
 
@@ -92,6 +92,10 @@ secret_store_name = os.environ['SecretName']
 secret_store_region = os.environ['SecretRegion']
 cs_cloud = os.environ['CSCloud']
 
+VERSION = "1.0.0"
+name = "cloud-hide-host"
+useragent = ("%s/%s" % (name, VERSION))
+
 if use_secret_store == "true":
     print("Retrieving API keys from secrets...")
     secret_str = get_secret(secret_store_name, secret_store_region)
@@ -112,7 +116,7 @@ def lambda_handler(event, context):
         print("Hiding terminated instance in Falcon")
         hosts = Hosts(client_id=FalconClientId,
                     client_secret=FalconSecret,
-                    base_url=cs_cloud
+                    base_url=cs_cloud, user_agent=useragent
                     )
 
         host_aid = hosts.query_devices_by_filter(filter=f"instance_id:'{instance}'")
