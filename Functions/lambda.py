@@ -116,7 +116,8 @@ def lambda_handler(event, context):
         print("Hiding terminated instance in Falcon")
         hosts = Hosts(client_id=FalconClientId,
                     client_secret=FalconSecret,
-                    base_url=cs_cloud, user_agent=useragent
+                    base_url=cs_cloud,
+                    user_agent=useragent
                     )
 
         host_aid = hosts.query_devices_by_filter(filter=f"instance_id:'{instance}'")
