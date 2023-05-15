@@ -11,7 +11,7 @@ The solution infrastructure is deployed via AWS CloudFormation templates. The te
 
 The following architectural diagram illustrates the resources deployed in an AWS account.
 
-![image](/images/diagram.png)
+![image](/images/aws-diagram.png)
 
 ### Workflow
 1. An AWS EC2 Instance is terminated.
