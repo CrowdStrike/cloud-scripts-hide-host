@@ -72,11 +72,11 @@ Before you deploy please ensure the samconfig.toml parameters are set.  A Makefi
 ### To deploy the solution:
 - Download this repository
 - In your terminal change to the newly downloaded directory
-- In your terminal run `make`
+- In your terminal run `python3 crowdstrike-hide-host-deploy.py`
 
 ### To delete the solution:
 - In your terminal change to the downloaded directory
-- In your terminal run `make clean`
+- In your terminal run `python3 crowdstrike-hide-host-delete.py`
 
 ## Contribution Notes
 
