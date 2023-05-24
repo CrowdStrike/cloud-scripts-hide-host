@@ -3,7 +3,7 @@
 
 ## Introduction
 
-Event driven solution to automatically remove AWS Instances from CrowdStrike upon termination.
+Event driven solution to automatically hide AWS Instances in CrowdStrike Falcon upon termination.
 
 ## Architectural Overview
 
