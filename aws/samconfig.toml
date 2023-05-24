@@ -1,0 +1,34 @@
+version = 0.1
+[default.global.parameters]
+stack_name = "cs-hide-host"
+s3_bucket="crowdstrike-cloud-scripts-hide-host"
+
+[default.deploy.parameters]
+region = ""
+s3_prefix="sam_deploy"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+parameter_overrides=[
+
+  # Configure you CrowdStrike Falcon API Keys
+  "SecretStorageMethod=SecretsManager",
+  "CrowdStrikeCloud=",
+  "FalconClientId=",
+  "FalconSecret=",
+  #"SSMClientID=",
+  #"SSMSecret=",
+
+  # Comma separated list of Regions to activate
+  "ActivateRegions=",
+
+  # Define Resource Names
+  "SecretName=cs-hide-host-secret",
+  "LambdaFunctionName=cs-hide-host-function",
+  "EventBusName=cs-hide-host-bus",
+  "EventBridgeRuleName=cs-hide-host-rule",
+  "EventBridgeRoleName=cs-hide-host-role",
+  "StackSetName=cs-hide-host-stackset",
+  "StackSetAdminRole=cs-hide-host-stackset-admin-role",
+  "StackSetExecRole=cs-hide-host-stackset-exec-role"
+
+]

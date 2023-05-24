@@ -7,7 +7,7 @@ Event driven solution to automatically remove AWS Instances from CrowdStrike upo
 
 ## Architectural Overview
 
-The solution infrastructure is deployed via AWS CloudFormation templates. The template will automatically launch AWS CloudFormation StackSets in each of the desired regions.
+The solution infrastructure is deployed via AWS SAM templates. The solution will automatically launch AWS CloudFormation StackSets in each of the desired regions.
 
 The following architectural diagram illustrates the resources deployed in an AWS account.
 
@@ -24,38 +24,59 @@ The following architectural diagram illustrates the resources deployed in an AWS
 
 ## Prerequisites
 
+### CrowdStrike Falcon API Keys
 Create Falcon API Keys with the following scope: Hosts Read & Write
 
-## CloudFormation Parameters
+### AWS SAM CLI
+Your client must have AWS SAM CLI Installed.  For details see: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html
+
+### Secret Storage
+You may store your Falcon API Keys in AWS Secrets Manager or Systems Manager Parameter Store.  Consider the requirements for each option:
+- Secrets Manager: This solution will create the secret for you. You will provide FalconClientId and FalconSecret in the appropriate samconfig.toml parameters.
+- Parameter Store: You must create the Systems Manager parameters BEFORE using this solution. Please create SecureString paramters for each of Falcon CLient ID and Falcon Secret Key.  You will provide the Paramter Store Paramter Names in the appropriate samconfig.toml parameters.
+
+## How to set Parameters
+
+Parameters must be set in samconfig.toml
 
 **CrowdStrike Falcon API Keys**
 | Parameter|Description|
 |---|---|
-|Your CrowdStrike Falcon Cloud| u-1, us-2 or eu-1|
-|Create Secret for API Keys| whether to provide Falcon API Keys and store as a secret|
-|Your Falcon API Client ID| only provide if Create Secret for API Keys = true|
-|Your Falcon API Secret| only provide if Create Secret for API Keys = true|
-|Name of SSM Parameter to store Falcon API Client ID| if you do not want to store API Keys as a secret, the SSM Paramter name where the API Client ID is stored|
-|Name of SSM Parameter to store Falcon API Client Secret| if you do not want to store API Keys as a secret, the SSM Paramter name where the API Secret is stored|
+|SecretStorageMethod| Allowed values: SecretsManager or ParameterStore|
+|CrowdStrikeCloud| The CrowdStrike Cloud for your CID: us-1, us-2 or eu-1|
+|FalconClientId| Your Falcon API Client ID if SecretStorageMethod = SecretsManager|
+|FalconSecret| only provide if Create Secret for API Keys = true|
+|SSMClientID|Name of SSM Parameter in which Falcon API Client ID is stored. |
+|SSMClientID|Name of SSM Parameter in which Falcon API Client Secret is stored. |
 
 **Activate Regions**
 | Parameter|Description|
 |---|---|
-|Activate regions to deploy EventBridge rules| list of regions to enroll with CrowdStrike Hide Host|
+|ActivateRegions| Comma delimited list of AWS regions to enroll with CrowdStrike Hide Host|
 
 **Define Resource Names** 
 These parameters have predefined values, but may be modified if your Organization requires.
-| Parameter|
-|---|
-|Name of Secret to store Falcon API Keys|
-|Lambda Function Name|
-|Event Bus Name|
-|EventBridge Rule Name|
-|EventBridge Role Name|
-|EventBridge Rule StackSet Name|
-|StackSet Admin Role Name|
-|StackSet Execution Role Name|
+| Parameter|Default Value|
+|---|---|
+|SecretName|cs-hide-host-secret|
+|LambdaFunctionName|cs-hide-host-function|
+|EventBusName|cs-hide-host-bus|
+|EventBridgeRuleName|cs-hide-host-rule|
+|EventBridgeRoleName|cs-hide-host-role|
+|StackSetName|cs-hide-host-stackset|
+|StackSetAdminRole|cs-hide-host-stackset-admin-role|
+|StackSetExecRole|cs-hide-host-stackset-exec-role|
 
+## How to Deploy
+==Before you deploy please ensure the samconfig.toml parameters are set.==  A Makefile is included to simplify the deployment process.  
+### To deploy the solution:
+- Download this repository
+- In your terminal change to the newly downloaded directory
+- In your terminal run `make`
+
+### To delete the solution:
+- In your terminal change to the downloaded directory
+- In your terminal run `make clean`
 
 ## Contribution Notes
 
