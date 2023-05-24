@@ -68,7 +68,7 @@ These parameters have predefined values, but may be modified if your Organizatio
 |StackSetExecRole|cs-hide-host-stackset-exec-role|
 
 ## How to Deploy
-==Before you deploy please ensure the samconfig.toml parameters are set.==  A Makefile is included to simplify the deployment process.  
+Before you deploy please ensure the samconfig.toml parameters are set.  A Makefile is included to simplify the deployment process.  
 ### To deploy the solution:
 - Download this repository
 - In your terminal change to the newly downloaded directory
