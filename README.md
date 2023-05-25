@@ -1,2 +1,10 @@
-# aws-instance-management
-Event driven solution to automatically remove AWS Instances from CrowdStrike upon termination.
+![image](/images/cs-logo.png)
+# CrowdStrike Cloud Scripts - Hide Host
+
+#### Event driven solution to automatically remove hosts from CrowdStrike Falcon upon termination.
+
+| Cloud Provider |
+|:-|
+| [AWS](aws/README.md) |
+| [Azure](azure/README.md) |
+| [GCP](gcp/README.md) |

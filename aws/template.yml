@@ -1,0 +1,325 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'CrowdStrike Hide Host Automation Template'
+
+Parameters:
+  ActivateRegions:
+    Description: Comma Delimited List of AWS Regions to enable CrowdStrike Hide Host
+    Type: CommaDelimitedList
+  EventBusName:
+    Description: Name of EventBus in primary region to ingest EventBridge events across regions
+    Type: String
+    Default: 'cs-hide-host-bus'
+  EventBridgeRuleName:
+    Description: Name of EventBridge Rules in each region
+    Type: String
+    Default: 'cs-hide-host-rule'
+  EventBridgeRoleName:
+    Description: Name of EventBridge Role to enable cross-region events
+    Type: String
+    Default: 'cs-hide-host-role'
+  LambdaFunctionName:
+    Description: Name of CrowdStrike Hide Host Lambda Function
+    Type: String
+    Default: 'cs-hide-host-function'
+  StackSetName:
+    Description: Name of the StackSet that creates EventBridge Rules
+    Type: String
+    Default: 'cs-hide-host-stackset'
+  StackSetAdminRole:
+    Description: Administration Role for CrowdStrike Hide Host Automation EB StackSet
+    Type: String
+    Default: 'cs-hide-host-stackset-admin-role'
+  StackSetExecRole:
+    Description: Execution Role for CrowdStrike Hide Host Automation EB StackSet
+    Type: String
+    Default: 'cs-hide-host-stackset-exec-role'
+  SecretStorageMethod:
+    Type: String
+    Description: The method in which to retrieve the CrowdStrike API keys - SecretsManager or ParameterStore. Please Note, CloudFormation can not create SecureString paramaters, 
+      if you choose ParamaterStore, you must have already created the SSM Parameters to store you Falcon API Keys.
+    AllowedValues:
+      - 'SecretsManager'
+      - 'ParameterStore'
+  SecretName:
+    Description: If SecretStorageMethod = SecretsManager, the name of your new AWS Secret to store Falcon API keys.
+    Type: String
+    Default: 'cs-hide-host-secret'
+  FalconClientId:
+    Description: If SecretStorageMethod = SecretsManager, your Falcon OAuth2 Client ID.
+    NoEcho: 'true'
+    Type: String
+    Default: ''
+  FalconSecret:
+    Description: If SecretStorageMethod = SecretsManager, your Falcon OAuth2 API Secret.
+    NoEcho: 'true'
+    Type: String
+    Default: ''
+  CrowdStrikeCloud:
+    Description: The CrowdStrike Cloud for your Falcon CID. Example us-1, us-2 or eu-1.
+    AllowedValues:
+      - 'us-1'
+      - 'us-2'
+      - 'eu-1'
+    Type: String
+  SSMClientID:
+    Description: If SecretStorageMethod = ParameterStore, your AWS SSM Parameter Name where Falcon OAuth2 Client ID is stored.
+    Type: String
+    Default: ''
+  SSMSecret:
+    Description: If SecretStorageMethod = ParameterStore, your AWS SSM Parameter Name where Falcon OAuth2 API Secret is stored.
+    Type: String
+    Default: ''
+  
+Conditions:
+  CreateSecret: !Equals [ !Ref 'SecretStorageMethod', SecretsManager ]
+  UseSSM: !Equals [ !Ref 'SecretStorageMethod', ParameterStore ]
+
+Resources:
+  StackSetAdministrationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref StackSetAdminRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Action: sts:AssumeRole
+          Principal:
+            Service: cloudformation.amazonaws.com
+          Effect: Allow
+          Sid: ''
+      Policies:
+        - PolicyName: crowdstrike-stackset-execution
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action: sts:AssumeRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${StackSetExecRole}
+                Effect: Allow
+
+  StackSetExecutionRole:
+    Type: AWS::IAM::Role
+    DependsOn: StackSetAdministrationRole
+    Properties:
+      RoleName: !Ref StackSetExecRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Action: sts:AssumeRole
+          Principal:
+            AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${StackSetAdminRole}
+          Effect: Allow
+          Sid: ''
+      Policies:
+        - PolicyName: crowdstrike-stackset-execution
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                - events:DeleteRule
+                - events:PutTargets
+                - events:DescribeRule
+                - iam:PassRole
+                - events:EnableRule
+                - events:PutRule
+                - events:RemoveTargets
+                - events:DisableRule
+                Resource:
+                - !Sub arn:${AWS::Partition}:events:*:*:rule/${EventBridgeRuleName}*
+                - !Sub arn:${AWS::Partition}:events:*:*:rule/*/${EventBridgeRuleName}*
+                - !Sub arn:${AWS::Partition}:iam::*:role/${EventBridgeRoleName}
+                Effect: Allow
+              - Action: cloudformation:*
+                Resource: '*'
+                Effect: Allow
+
+  EventBus:
+    Type: AWS::Events::EventBus
+    Properties: 
+      Name: !Ref EventBusName
+
+  PrimaryEbRule:
+    Type: AWS::Events::Rule
+    DependsOn: EventBus
+    Properties: 
+      Name: !Ref EventBridgeRuleName
+      EventBusName: !Ref EventBusName
+      EventPattern:
+        source:
+          - aws.ec2
+        detail-type:
+          - EC2 Instance State-change Notification
+        detail:
+          state:
+            - terminated
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt LambdaFunction.Arn 
+          Id: 'cslam'
+
+  EventBridgeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref EventBridgeRoleName
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Action: sts:AssumeRole
+          Principal:
+            Service: events.amazonaws.com
+          Effect: Allow
+          Sid: ''
+      Policies:
+        - PolicyName: crowdstrike-invoke-eventbus
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action: events:PutEvents
+                Resource: !GetAtt EventBus.Arn
+                Effect: Allow
+
+  EbStackSet:
+    Type: 'AWS::CloudFormation::StackSet'
+    Properties:      
+      StackSetName: !Ref StackSetName
+      AdministrationRoleARN: !GetAtt StackSetAdministrationRole.Arn
+      ExecutionRoleName: !Ref StackSetExecutionRole
+      PermissionModel: SELF_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets: 
+            Accounts:
+              - !Sub ${AWS::AccountId}
+          Regions: !Ref ActivateRegions
+      Parameters:
+        - ParameterKey: RuleName
+          ParameterValue: !Sub '${EventBridgeRuleName}-${AWS::Region}'
+        - ParameterKey: Target
+          ParameterValue: !GetAtt EventBus.Arn
+        - ParameterKey: RoleArn
+          ParameterValue: !GetAtt EventBridgeRole.Arn
+      TemplateBody: |
+        ---
+        AWSTemplateFormatVersion: 2010-09-09
+        Description: Create EventBridge Rules to enable CrowdStrike Falcon CSPM
+        Parameters:
+          RuleName:
+            Description: Event Bridge Rule Name
+            Type: String
+            Default: ''
+          Target:
+            Description: Target Event Bus Arn
+            Type: String
+            Default: ''
+          RoleArn:
+            Description: Role Arn
+            Type: String
+            Default: ''
+        Resources:
+          CrowdStrikeEventBusRule: 
+            Type: AWS::Events::Rule
+            Properties:
+              Name: !Ref RuleName
+              EventPattern:
+                source:
+                  - aws.ec2
+                detail-type:
+                  - EC2 Instance State-change Notification
+                detail:
+                  state:
+                    - terminated
+              State: ENABLED
+              Targets:
+                - Arn: !Ref Target
+                  Id: "csbus"
+                  RoleArn: !Ref RoleArn
+
+  CrowdStrikeSecret:
+    Condition: CreateSecret
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: CrowdStrike Falcon API Keys
+      Name: !Ref SecretName
+      SecretString:
+        Fn::Join:
+          - ''
+          - - '{"FalconClientId":"'
+            - Ref: "FalconClientId"
+            - '","FalconSecret": "'
+            - Ref: FalconSecret
+            - '"}'
+
+  LambdaFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+            Condition: { }
+      Path: /
+      Policies: 
+        - PolicyName: CrowdStrikeApiPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - !If 
+                - CreateSecret
+                - Effect: Allow
+                  Action:
+                    - 'secretsmanager:GetSecretValue'
+                  Resource:
+                    - !Sub 'arn:${AWS::Partition}:secretsmanager:*:${AWS::AccountId}:secret:${SecretName}*'
+                - Effect: Allow
+                  Action:
+                    - 'ssm:GetParameter'
+                  Resource:
+                    - !Sub 'arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:parameter/${SSMClientID}'
+                    - !Sub 'arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:parameter/${SSMSecret}'
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AWSOrganizationsReadOnlyAccess'
+  
+  LambdaFunctionPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn: LambdaFunction
+    Properties: 
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref LambdaFunctionName
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt PrimaryEbRule.Arn
+
+  falconpy:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: source/python
+      CompatibleRuntimes:
+        - python3.9
+    Metadata:
+      BuildMethod: python3.9 
+
+  LambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Environment:
+        Variables:
+          CS_CLOUD: !Ref CrowdStrikeCloud
+          SECRET_REGION: !Ref AWS::Region
+          SECRET_STORE_NAME: !If [CreateSecret, !Ref SecretName, "disabled"]
+          SSM_CLIENT_NAME: !If [CreateSecret, "disabled", !Ref SSMClientID]
+          SSM_SECRET_NAME: !If [CreateSecret, "disabled", !Ref SSMSecret]
+          USE_SECRET_STORE: !If [CreateSecret, "true", "false"]
+      FunctionName: !Ref LambdaFunctionName
+      Description: Removes Instances from CrowdStrike upon termination
+      Handler: lambda.lambda_handler
+      Runtime: python3.9
+      MemorySize: 128
+      Role: !GetAtt LambdaFunctionRole.Arn
+      Timeout: 240
+      Layers:
+        - !Ref falconpy
+      CodeUri: source/lambda
+      PackageType: Zip
